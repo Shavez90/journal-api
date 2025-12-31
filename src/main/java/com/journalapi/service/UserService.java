@@ -1,6 +1,9 @@
 package com.journalapi.service;
 
+import com.journalapi.dto.CreateUserRequest;
+import java.time.Instant;
 import com.journalapi.dto.UserDTO;
+import com.journalapi.exception.DuplicateEmailException;
 import com.journalapi.exception.UserNotFoundException;
 import com.journalapi.model.User;
 import com.journalapi.repository.UserRepository;
@@ -27,4 +30,23 @@ public class UserService {
                 .email(user.getEmail())
                 .build();
     }
+    public UserDTO createUser(CreateUserRequest request) {
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateEmailException(
+                    "Email already exists: " + request.getEmail()
+            );
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(request.getPassword()) // hashing later
+                .createdAt(Instant.now())
+                .build();
+
+        User savedUser = userRepository.save(user);
+        return mapToDto(savedUser);
+    }
+
 }
