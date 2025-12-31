@@ -1,4 +1,4 @@
-package com.example.journal;
+package com.journalapi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
