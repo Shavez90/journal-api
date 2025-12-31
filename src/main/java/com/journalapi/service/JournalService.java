@@ -2,6 +2,9 @@ package com.journalapi.service;
 
 import com.journalapi.dto.CreateJournalRequest;
 import com.journalapi.dto.JournalResponseDTO;
+import com.journalapi.dto.UpdateJournalRequest;
+import com.journalapi.exception.ForbiddenException;
+import com.journalapi.exception.JournalNotFoundException;
 import com.journalapi.model.Journal;
 import com.journalapi.repository.JournalRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,4 +50,37 @@ public class JournalService {
                 .updatedAt(journal.getUpdatedAt())
                 .build();
     }
+    public JournalResponseDTO updateJournal(
+            String journalId,
+            String userId,
+            UpdateJournalRequest request) {
+
+        Journal journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new RuntimeException("Journal not found"));
+        if (!journal.getUserId().equals(userId)) {
+            throw new ForbiddenException("You do not own this journal");
+        }
+
+
+        journal.setTitle(request.getTitle());
+        journal.setContent(request.getContent());
+        journal.setUpdatedAt(Instant.now());
+
+        Journal updated = journalRepository.save(journal);
+        return mapToDto(updated);
+    }
+    public void deleteJournal(String journalId, String userId) {
+
+        Journal journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
+
+
+        if (!journal.getUserId().equals(userId)) {
+            throw new ForbiddenException("You do not own this journal");
+        }
+
+        journalRepository.delete(journal);
+    }
+
+
 }

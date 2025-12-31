@@ -1,4 +1,8 @@
 package com.journalapi.exception;
 
-public class JournalNotFoundException {
+public class JournalNotFoundException extends RuntimeException {
+
+    public JournalNotFoundException(String message) {
+        super(message);
+    }
 }
