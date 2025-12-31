@@ -2,6 +2,7 @@ package com.journalapi.controller;
 
 import com.journalapi.dto.CreateJournalRequest;
 import com.journalapi.dto.JournalResponseDTO;
+import com.journalapi.dto.UpdateJournalRequest;
 import com.journalapi.service.JournalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,23 @@ public class JournalController {
 
         return journalService.createJournal(userId, request);
     }
+    @PutMapping("/{journalId}")
+    public JournalResponseDTO updateJournal(
+            @PathVariable String journalId,
+            @RequestParam String userId,
+            @RequestBody @Valid UpdateJournalRequest request) {
+
+        return journalService.updateJournal(journalId, userId, request);
+    }
+
+    @DeleteMapping("/{journalId}")
+    public void deleteJournal(
+            @PathVariable String journalId,
+            @RequestParam String userId) {
+
+        journalService.deleteJournal(journalId, userId);
+    }
+
 
     @GetMapping
     public List<JournalResponseDTO> getUserJournals(
