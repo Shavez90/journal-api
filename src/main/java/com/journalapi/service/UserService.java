@@ -8,6 +8,7 @@ import com.journalapi.exception.UserNotFoundException;
 import com.journalapi.model.User;
 import com.journalapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserDTO getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
@@ -41,7 +43,8 @@ public class UserService {
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
-                .password(request.getPassword()) // hashing later
+                .password(passwordEncoder.encode(request.getPassword()))
+                // hashing later
                 .createdAt(Instant.now())
                 .build();
 

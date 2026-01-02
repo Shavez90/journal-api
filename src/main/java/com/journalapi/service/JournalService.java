@@ -56,7 +56,7 @@ public class JournalService {
             UpdateJournalRequest request) {
 
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Journal not found"));
+                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
         if (!journal.getUserId().equals(userId)) {
             throw new ForbiddenException("You do not own this journal");
         }
@@ -81,6 +81,7 @@ public class JournalService {
 
         journalRepository.delete(journal);
     }
+
 
 
 }
