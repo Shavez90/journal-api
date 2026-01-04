@@ -27,4 +27,6 @@ public class User {
     private List<String> journalIds;
 
     private Instant createdAt;
+    private Role role;
+
 }

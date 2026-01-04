@@ -5,42 +5,102 @@ import com.journalapi.dto.JournalResponseDTO;
 import com.journalapi.dto.UpdateJournalRequest;
 import com.journalapi.exception.ForbiddenException;
 import com.journalapi.exception.JournalNotFoundException;
+import com.journalapi.exception.UserNotFoundException;
 import com.journalapi.model.Journal;
+import com.journalapi.model.User;
 import com.journalapi.repository.JournalRepository;
+import com.journalapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class JournalService {
 
     private final JournalRepository journalRepository;
+    private final UserRepository userRepository;
 
-    public JournalResponseDTO createJournal(String userId, CreateJournalRequest request) {
+    // CREATE JOURNAL (ownership from username → userId)
+    public JournalResponseDTO createJournal(String username, CreateJournalRequest request) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         Journal journal = Journal.builder()
-                .userId(userId)
+                .userId(user.getId())               // ✅ ownership stored internally
                 .title(request.getTitle())
                 .content(request.getContent())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        Journal savedJournal = journalRepository.save(journal);
-        return mapToDto(savedJournal);
+        return mapToDto(journalRepository.save(journal));
     }
-
+    // GET journals for authenticated user only
     public List<JournalResponseDTO> getJournalsByUserId(String userId) {
         return journalRepository.findAllByUserId(userId)
                 .stream()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    // GET MY JOURNALS (JWT user → DB user → journals)
+    public List<JournalResponseDTO> getMyJournals(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return journalRepository.findAllByUserId(user.getId())
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    // UPDATE JOURNAL (ownership enforced)
+    public JournalResponseDTO updateJournal(
+            String journalId,
+            String username,
+            UpdateJournalRequest request
+
+    ) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        Journal journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
+
+        if (!journal.getUserId().equals(user.getId())) {
+            throw new ForbiddenException("You do not own this journal");
+        }
+
+        journal.setTitle(request.getTitle());
+        journal.setContent(request.getContent());
+        journal.setUpdatedAt(Instant.now());
+
+        return mapToDto(journalRepository.save(journal));
+    }
+
+    // DELETE JOURNAL (ownership enforced)
+    public void deleteJournal(String journalId, String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        Journal journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
+
+        if (!journal.getUserId().equals(user.getId())) {
+            throw new ForbiddenException("You do not own this journal");
+        }
+
+        journalRepository.delete(journal);
+    }
+
+    // DTO MAPPER
     private JournalResponseDTO mapToDto(Journal journal) {
         return JournalResponseDTO.builder()
                 .id(journal.getId())
@@ -50,38 +110,4 @@ public class JournalService {
                 .updatedAt(journal.getUpdatedAt())
                 .build();
     }
-    public JournalResponseDTO updateJournal(
-            String journalId,
-            String userId,
-            UpdateJournalRequest request) {
-
-        Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
-        if (!journal.getUserId().equals(userId)) {
-            throw new ForbiddenException("You do not own this journal");
-        }
-
-
-        journal.setTitle(request.getTitle());
-        journal.setContent(request.getContent());
-        journal.setUpdatedAt(Instant.now());
-
-        Journal updated = journalRepository.save(journal);
-        return mapToDto(updated);
-    }
-    public void deleteJournal(String journalId, String userId) {
-
-        Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new JournalNotFoundException("Journal not found"));
-
-
-        if (!journal.getUserId().equals(userId)) {
-            throw new ForbiddenException("You do not own this journal");
-        }
-
-        journalRepository.delete(journal);
-    }
-
-
-
 }

@@ -14,4 +14,5 @@ public class JournalApp {
 //$2a$10$.LwjioiWRVDdxjyfHrWMwu0orDXTssGTYh3LQGwF.l6nIXh7C6phi
 
 	}
+
 }

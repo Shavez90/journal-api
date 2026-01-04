@@ -9,6 +9,7 @@ import com.journalapi.repository.UserRepository;
 import com.journalapi.service.JournalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -24,14 +25,7 @@ public class JournalController {
     private final UserRepository userRepository;
 
     /**
-     * ✅ ADDED (already by you, now actually USED everywhere)
-     *
-     * PURPOSE:
-     * - Extract the REAL authenticated user from Spring Security
-     * - This replaces ALL userId request params
-     *
-     * FLOW:
-     * JWT → SecurityContext → Authentication → username → User (DB)
+     * Extract the authenticated user from Spring Security context
      */
     private User getAuthenticatedUser() {
         Authentication authentication =
@@ -39,35 +33,27 @@ public class JournalController {
 
         String username = authentication.getName();
 
+
         return userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new UserNotFoundException("User not found: " + username));
     }
 
-    /**
-     * ❌ REMOVED: @RequestParam String userId
-     * ✅ ADDED: authenticated user from SecurityContext
-     *
-     * WHY:
-     * - Client must NOT control identity
-     * - Server decides who is creating the journal
-     */
+    // ================= CREATE =================
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @PostMapping
     public JournalResponseDTO createJournal(
             @RequestBody @Valid CreateJournalRequest request) {
 
         User currentUser = getAuthenticatedUser();
-        return journalService.createJournal(currentUser.getId(), request);
+        return journalService.createJournal(currentUser.getUsername(), request);
+
     }
 
-    /**
-     * ❌ REMOVED: @RequestParam String userId
-     * ✅ ADDED: ownership enforced using authenticated user's ID
-     *
-     * SECURITY:
-     * - Even if client guesses journalId, service blocks access
-     * - 403 Forbidden if not owner
-     */
+    // ================= UPDATE =================
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @PutMapping("/{journalId}")
     public JournalResponseDTO updateJournal(
             @PathVariable String journalId,
@@ -81,13 +67,9 @@ public class JournalController {
         );
     }
 
-    /**
-     * ❌ REMOVED: @RequestParam String userId
-     * ✅ ADDED: server-side identity enforcement
-     *
-     * RESULT:
-     * - Client can delete ONLY their own journals
-     */
+    // ================= DELETE =================
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @DeleteMapping("/{journalId}")
     public void deleteJournal(@PathVariable String journalId) {
 
@@ -95,13 +77,9 @@ public class JournalController {
         journalService.deleteJournal(journalId, currentUser.getId());
     }
 
-    /**
-     * ❌ REMOVED: @RequestParam String userId
-     * ✅ ADDED: server fetches journals ONLY for authenticated user
-     *
-     * DATA LEAK PREVENTION:
-     * - No way to fetch another user's journals
-     */
+    // ================= READ =================
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping
     public List<JournalResponseDTO> getUserJournals() {
 

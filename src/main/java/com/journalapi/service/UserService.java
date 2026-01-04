@@ -4,7 +4,9 @@ import com.journalapi.dto.CreateUserRequest;
 import java.time.Instant;
 import com.journalapi.dto.UserDTO;
 import com.journalapi.exception.DuplicateEmailException;
+import com.journalapi.exception.DuplicateUsernameException;
 import com.journalapi.exception.UserNotFoundException;
+import com.journalapi.model.Role;
 import com.journalapi.model.User;
 import com.journalapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,12 @@ public class UserService {
     }
     public UserDTO createUser(CreateUserRequest request) {
 
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateUsernameException(
+                    "Username already exists: " + request.getUsername()
+            );
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException(
                     "Email already exists: " + request.getEmail()
@@ -44,12 +52,11 @@ public class UserService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                // hashing later
-                .createdAt(Instant.now())
+                .role(Role.USER)   // ✅ default role
                 .build();
 
-        User savedUser = userRepository.save(user);
-        return mapToDto(savedUser);
+        return mapToDto(userRepository.save(user));
     }
+
 
 }

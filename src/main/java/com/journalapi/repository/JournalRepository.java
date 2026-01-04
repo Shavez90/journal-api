@@ -1,6 +1,7 @@
 package com.journalapi.repository;
 
 import com.journalapi.model.Journal;
+import com.journalapi.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
