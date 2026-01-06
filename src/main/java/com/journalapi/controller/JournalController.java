@@ -62,7 +62,7 @@ public class JournalController {
         User currentUser = getAuthenticatedUser();
         return journalService.updateJournal(
                 journalId,
-                currentUser.getId(),
+                currentUser.getUsername(),
                 request
         );
     }
