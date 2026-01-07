@@ -1,189 +1,158 @@
 # Journal API
 
-A REST API for managing personal journal entries with user authentication and persistent storage.
+A secure backend application for managing users and their personal journal entries.
+Built with **Spring Boot**, **MongoDB**, and **JWT-based authentication**, following a clean, layered architecture.
 
-## Features
+This project focuses on **real-world backend practices**: stateless authentication, ownership enforcement, DTO usage, service-layer business logic, and environment-based configuration.
 
-- User authentication (signup, login, logout)
-- Create, read, update, and delete journal entries
-- Persistent data storage
-- RESTful API design
+---
 
-## Technologies
+## Tech Stack
 
-- Node.js
-- Express.js
-- MongoDB
-- JWT (JSON Web Tokens)
+* Java 17
+* Spring Boot
+* Spring Security (JWT, BCrypt)
+* Spring Web
+* Spring Data MongoDB
+* Maven
+* MongoDB (Atlas / Local)
 
-## Installation
+---
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Shavez90/journal-api.git
-cd journal-api
+## Core Features
+
+* User registration and authentication (JWT-based)
+* Secure login with stateless JWT tokens
+* Journal CRUD operations (Create, Read, Update, Delete)
+* One user can own multiple journals
+* **Ownership-based access control**
+
+  * Users can only access and modify their own journals
+* Role-based authorization (`USER`, `ADMIN`)
+* DTO-based request and response handling
+* Global exception handling with proper HTTP status codes
+* Clean separation of Controller, Service, and Repository layers
+* Environment-based configuration for secrets (production-ready)
+
+---
+
+## Authentication & Security
+
+* Stateless JWT authentication
+* Passwords stored using BCrypt hashing
+* JWT extracted and validated via a security filter
+* Authenticated user resolved via `SecurityContext`
+* No `userId` is ever accepted from client requests
+
+---
+
+## API Overview
+
+### Authentication APIs
+
+* `POST /api/users` – Register a new user
+* `POST /api/auth/login` – Login and receive JWT token
+
+### Journal APIs (Protected)
+
+* `POST /api/journals` – Create a journal (authenticated user)
+* `GET /api/journals` – Get journals for authenticated user
+* `GET /api/journals/{journalId}` – Get a specific journal by ID
+* `PUT /api/journals/{journalId}` – Update own journal
+* `DELETE /api/journals/{journalId}` – Delete own journal
+
+---
+
+## Data Model (High Level)
+
+### User
+
+* id
+* username
+* email
+* password (hashed)
+* role
+
+### Journal
+
+* id
+* title
+* content
+* userId (ownership)
+* createdAt
+* updatedAt
+
+A journal belongs to a user through the `userId` field.
+Ownership is enforced **server-side** in the service layer.
+
+---
+
+## Architecture Overview
+
+```
+Request
+  → JWT Filter
+    → Controller
+      → Service (business logic + ownership)
+        → Repository
+          → MongoDB
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+### Design Principles
 
-3. Create a `.env` file in the root directory with the following variables:
-```
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-PORT=5000
-```
+* Controllers are thin (HTTP only)
+* Services enforce business rules and ownership
+* Repositories handle data access only
+* Entities are never exposed directly
+* DTOs define API contracts
 
-4. Start the server:
-```bash
-npm start
-```
+---
 
-The API will be available at `http://localhost:5000`
+## Configuration & Secrets
 
-## API Endpoints
+This project uses **environment variables** for sensitive configuration:
 
-### Authentication
+* `MONGODB_URI`
+* `JWT_SECRET`
+* `JWT_EXPIRATION`
+* `APP_FRONTEND_URL`
 
-#### POST /api/auth/signup
-Register a new user account.
+Secrets are **never committed** to source control.
 
-**Request Body:**
-```json
-{
-  "username": "string",
-  "email": "string",
-  "password": "string"
-}
-```
+---
 
-**Response:**
-- Status: 201 Created
-- Body: User object with authentication token
+## How to Run Locally
 
-#### POST /api/auth/login
-Authenticate and receive a JWT token.
+1. Clone the repository
+2. Ensure MongoDB is running (local or Atlas)
+3. Set required environment variables
+4. Run the Spring Boot application
+5. Test APIs using Postman (Bearer token required)
 
-**Request Body:**
-```json
-{
-  "email": "string",
-  "password": "string"
-}
-```
+---
 
-**Response:**
-- Status: 200 OK
-- Body: User object with authentication token
+## Deployment
 
-#### POST /api/auth/logout
-Logout the current user (invalidate token).
+This project is **deployment-ready**.
 
-**Response:**
-- Status: 200 OK
+* Works with Render / Railway / Heroku
+* Stateless authentication
+* Externalized configuration
+* No hardcoded secrets
 
-### Journals
+---
 
-#### GET /api/journals
-Retrieve all journal entries for the authenticated user.
+## Notes
 
-**Authorization:** Required (Bearer token)
+* This project demonstrates **production-grade backend structure**
+* Focus is on correctness, security, and clean architecture
+* A simpler **Task API** can be built using the same patterns to reinforce learning
 
-**Response:**
-- Status: 200 OK
-- Body: Array of journal entry objects
+---
 
-#### POST /api/journals
-Create a new journal entry.
+### Status
 
-**Authorization:** Required (Bearer token)
-
-**Request Body:**
-```json
-{
-  "title": "string",
-  "content": "string",
-  "tags": ["string"]
-}
-```
-
-**Response:**
-- Status: 201 Created
-- Body: Created journal entry object
-
-#### GET /api/journals/{journalId}
-Retrieve a specific journal entry by ID.
-
-**Authorization:** Required (Bearer token)
-
-**Parameters:**
-- `journalId` (path parameter): The ID of the journal entry
-
-**Response:**
-- Status: 200 OK
-- Body: Journal entry object
-
-#### PUT /api/journals/{journalId}
-Update a specific journal entry.
-
-**Authorization:** Required (Bearer token)
-
-**Parameters:**
-- `journalId` (path parameter): The ID of the journal entry
-
-**Request Body:**
-```json
-{
-  "title": "string",
-  "content": "string",
-  "tags": ["string"]
-}
-```
-
-**Response:**
-- Status: 200 OK
-- Body: Updated journal entry object
-
-#### DELETE /api/journals/{journalId}
-Delete a specific journal entry.
-
-**Authorization:** Required (Bearer token)
-
-**Parameters:**
-- `journalId` (path parameter): The ID of the journal entry
-
-**Response:**
-- Status: 204 No Content
-
-## Error Handling
-
-The API returns appropriate HTTP status codes and error messages:
-
-- `400 Bad Request`: Invalid request data
-- `401 Unauthorized`: Missing or invalid authentication token
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Author
-
-Shavez90
-
-## Support
-
-For issues and questions, please open an issue on the GitHub repository.
+✅ Complete
+✅ Secure
+✅ Clean architecture
+✅ Ready for extension or deployment
